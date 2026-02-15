@@ -1,0 +1,7 @@
+
+{
+  "appId": "com.ecofamille.app",
+  "appName": "EcoFamille",
+  "webDir": ".",
+  "bundledWebRuntime": false
+}
