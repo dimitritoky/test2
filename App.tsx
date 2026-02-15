@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { Transaction, MonthlyBudget, Category, TransactionType, FixedTemplate, User } from './types';
+import { Transaction, MonthlyBudget, Category, FixedTemplate, User } from './types';
 import { Dashboard } from './components/Dashboard';
 import { TransactionList } from './components/TransactionList';
 import { TransactionForm } from './components/TransactionForm';
@@ -33,17 +33,20 @@ const App: React.FC = () => {
   const [viewMonth, setViewMonth] = useState(new Date().getMonth());
   const [viewYear, setViewYear] = useState(new Date().getFullYear());
 
+  // Load initial data
   useEffect(() => {
     const saved = localStorage.getItem(STORAGE_KEY);
     if (saved) {
-      const parsed = JSON.parse(saved);
-      setTransactions(parsed.transactions || []);
-      setBudgets(parsed.budgets || []);
-      setTemplates(parsed.templates || []);
-      setUsers(parsed.users || DEFAULT_USERS);
-      
-      const savedUser = localStorage.getItem('ecofamille_session');
-      if (savedUser) setCurrentUser(JSON.parse(savedUser));
+      try {
+        const parsed = JSON.parse(saved);
+        setTransactions(parsed.transactions || []);
+        setBudgets(parsed.budgets || []);
+        setTemplates(parsed.templates || []);
+        setUsers(parsed.users || DEFAULT_USERS);
+      } catch (e) {
+        console.error("Failed to parse data storage", e);
+        setUsers(DEFAULT_USERS);
+      }
     } else {
       setUsers(DEFAULT_USERS);
       setTemplates(DEFAULT_TEMPLATES);
@@ -52,10 +55,22 @@ const App: React.FC = () => {
         { category: Category.Food, limit: 800000 },
       ]);
     }
+
+    const savedUser = localStorage.getItem('ecofamille_session');
+    if (savedUser) {
+      try {
+        setCurrentUser(JSON.parse(savedUser));
+      } catch (e) {
+        localStorage.removeItem('ecofamille_session');
+      }
+    }
   }, []);
 
+  // Save data on changes
   useEffect(() => {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify({ transactions, budgets, templates, users }));
+    if (users.length > 0) {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify({ transactions, budgets, templates, users }));
+    }
   }, [transactions, budgets, templates, users]);
 
   const filteredTransactions = useMemo(() => {
@@ -89,11 +104,11 @@ const App: React.FC = () => {
       ownerId: currentUser.id,
       id: Math.random().toString(36).substr(2, 9),
     };
-    setTransactions([newTx, ...transactions]);
+    setTransactions(prev => [newTx, ...prev]);
   };
 
   const deleteTransaction = (id: string) => {
-    setTransactions(transactions.filter(t => t.id !== id));
+    setTransactions(prev => prev.filter(t => t.id !== id));
   };
 
   const addTemplate = (data: any) => {
@@ -103,11 +118,11 @@ const App: React.FC = () => {
       ownerId: currentUser.id,
       id: Math.random().toString(36).substr(2, 9),
     };
-    setTemplates([...templates, newTemplate]);
+    setTemplates(prev => [...prev, newTemplate]);
   };
 
   const deleteTemplate = (id: string) => {
-    setTemplates(templates.filter(t => t.id !== id));
+    setTemplates(prev => prev.filter(t => t.id !== id));
   };
 
   const addUser = (userData: any) => {
@@ -116,11 +131,11 @@ const App: React.FC = () => {
       id: Math.random().toString(36).substr(2, 9),
       createdAt: new Date().toISOString()
     };
-    setUsers([...users, newUser]);
+    setUsers(prev => [...prev, newUser]);
   };
 
   const deleteUser = (id: string) => {
-    setUsers(users.filter(u => u.id !== id));
+    setUsers(prev => prev.filter(u => u.id !== id));
   };
 
   const importData = (data: any) => {
@@ -209,7 +224,7 @@ const App: React.FC = () => {
         </button>
         <button onClick={() => setActiveTab('insights')} className={`flex flex-col items-center gap-1 p-2 ${activeTab === 'insights' ? 'text-blue-600' : 'text-slate-400'}`}>
           <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"></circle><path d="M12 16v-4M12 8h.01"></path></svg>
-          <span className="text-[10px] font-bold">Conseils IA</span>
+          <span className="text-[10px] font-bold">IA</span>
         </button>
         <button onClick={() => setActiveTab('settings')} className={`flex flex-col items-center gap-1 p-2 ${activeTab === 'settings' ? 'text-blue-600' : 'text-slate-400'}`}>
           <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
